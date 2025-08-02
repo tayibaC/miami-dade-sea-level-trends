@@ -13,6 +13,8 @@ class SeaLevelChart {
     this.yScale = yScale;
     this.colors = {
       Monthly_MSL: "#0E87CC",
+      Confidence_Band: "#FFE5B4",
+      Linear_Trend: "#FA8128"
     };
   }
 
@@ -99,6 +101,36 @@ class SeaLevelChart {
       .x((d) => x(d.month))
       .y((d) => y(d.Monthly_MSL))
       .curve(d3.curveCatmullRom.alpha(0.5));
+
+    const lineTrend = d3
+      .line()
+      .x((d) => x(d.month))
+      .y((d) => y(d.Linear_Trend))
+      .curve(d3.curveCatmullRom.alpha(0.5));
+
+    const areaConfidence = d3
+      .area()
+      .x((d) => x(d.month))
+      .y0((d) => y(d.Low_Conf))
+      .y1((d) => y(d.High_Conf))
+      .curve(d3.curveCatmullRom.alpha(0.5));
+
+    // Confidence band
+    svg
+      .append("path")
+      .datum(data)
+      .attr("fill", this.colors.Confidence_Band)
+      .attr("stroke", "none")
+      .attr("d", areaConfidence);
+
+    // Linear trend line
+    svg
+      .append("path")
+      .datum(data)
+      .attr("fill", "none")
+      .attr("stroke", this.colors.Linear_Trend)
+      .attr("stroke-width", 2)
+      .attr("d", lineTrend);
 
     // Monthly sea level line
     svg
