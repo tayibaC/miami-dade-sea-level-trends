@@ -11,6 +11,9 @@ class SeaLevelChart {
     this.width = 800 - this.margin.left - this.margin.right;
     this.height = 400 - this.margin.top - this.margin.bottom;
     this.yScale = yScale;
+    this.colors = {
+      Monthly_MSL: "#0E87CC",
+    };
   }
 
   async getData() {
@@ -87,6 +90,35 @@ class SeaLevelChart {
       .attr("y", this.height + this.margin.bottom - 10)
       .attr("text-anchor", "middle")
       .text("Month");
+
+    // Filter to current chart year
+    const data = this.seaLevelData.filter((d) => d.year === this.currentYear);
+
+    const lineMonthly = d3
+      .line()
+      .x((d) => x(d.month))
+      .y((d) => y(d.Monthly_MSL))
+      .curve(d3.curveCatmullRom.alpha(0.5));
+
+    // Monthly sea level line
+    svg
+      .append("path")
+      .datum(data)
+      .attr("fill", "none")
+      .attr("stroke", this.colors.Monthly_MSL)
+      .attr("stroke-width", 2)
+      .attr("d", lineMonthly);
+
+    // Points
+    svg
+      .selectAll("circle")
+      .data(data)
+      .enter()
+      .append("circle")
+      .attr("cx", (d) => x(d.month))
+      .attr("cy", (d) => y(d.Monthly_MSL))
+      .attr("r", 3)
+      .attr("fill", this.colors.Monthly_MSL);
   }
 }
 
