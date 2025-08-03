@@ -1,10 +1,12 @@
 class SeaLevelChart {
   constructor(
     seaLevelData = [],
+    eventsData = [],
     currentYear = new Date().getFullYear(),
     yScale,
   ) {
     this.seaLevelData = seaLevelData;
+    this.eventsData = eventsData;
     this.currentYear = currentYear;
     this.minYear = 1996;
     this.maxYear = 2025;
@@ -35,7 +37,32 @@ class SeaLevelChart {
         }),
       );
 
+      const eventsData = await d3.csv("miami-dade-storm_data.csv", resData => {
+        const dateParts = resData.BEGIN_DATE.split('/');
+        const month = parseInt(dateParts[0], 10);
+        const day = parseInt(dateParts[1], 10);
+        const yearShort = parseInt(dateParts[2], 10);
+      
+        const fullYear = (yearShort < 70) ? 2000 + yearShort : 1900 + yearShort; 
+  
+        const dateObject = new Date(fullYear, month - 1, day);
+        const monthName = dateObject.toLocaleString('en-US', { month: 'short' });
+        const year = dateObject.getFullYear();
+      
+        return {
+          Event_ID: +resData.EVENT_ID,
+          Begin_Date: resData.BEGIN_DATE,
+          month: monthName,
+          year: year,
+          date: dateObject,
+          Event_Type: resData.EVENT_TYPE,
+          Event_Narrative: resData.EVENT_NARRATIVE,
+          Episode_Narrative: resData.EPISODE_NARRATIVE
+        };
+      });
+
       this.seaLevelData = seaLevelData;
+      this.eventsData = eventsData;
       this.currentYear = 1996;
 
       this.drawChart();
