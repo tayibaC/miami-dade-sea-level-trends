@@ -24,42 +24,71 @@ class SeaLevelChart {
   }
 
   async getData() {
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
     try {
       const seaLevelData = await d3.csv(
         "virginia-key-8723214_meantrend.csv",
-        (d) => ({
-          year: +d.Year.trim(),
-          month: +d.Month.trim(),
-          Monthly_MSL: +d.Monthly_MSL.trim(),
-          Linear_Trend: +d.Linear_Trend.trim(),
-          High_Conf: +d["High_Conf."].trim(),
-          Low_Conf: +d["Low_Conf."].trim(),
-        }),
+        (d) => {
+          const monthNumber = +d.Month.trim();
+          const monthName = months[monthNumber - 1];
+          const year = +d.Year.trim();
+
+          const dateObj = new Date(year, monthNumber - 1);
+
+          return {
+            year: +d.Year.trim(),
+            month: monthName,
+            date: dateObj,
+            Monthly_MSL: +d.Monthly_MSL.trim(),
+            Linear_Trend: +d.Linear_Trend.trim(),
+            High_Conf: +d["High_Conf."].trim(),
+            Low_Conf: +d["Low_Conf."].trim(),
+          };
+        },
       );
 
-      const eventsData = await d3.csv("miami-dade-storm_data.csv", resData => {
-        const dateParts = resData.BEGIN_DATE.split('/');
-        const month = parseInt(dateParts[0], 10);
-        const day = parseInt(dateParts[1], 10);
-        const yearShort = parseInt(dateParts[2], 10);
-      
-        const fullYear = (yearShort < 70) ? 2000 + yearShort : 1900 + yearShort; 
-  
-        const dateObject = new Date(fullYear, month - 1, day);
-        const monthName = dateObject.toLocaleString('en-US', { month: 'short' });
-        const year = dateObject.getFullYear();
-      
-        return {
-          Event_ID: +resData.EVENT_ID,
-          Begin_Date: resData.BEGIN_DATE,
-          month: monthName,
-          year: year,
-          date: dateObject,
-          Event_Type: resData.EVENT_TYPE,
-          Event_Narrative: resData.EVENT_NARRATIVE,
-          Episode_Narrative: resData.EPISODE_NARRATIVE
-        };
-      });
+      const eventsData = await d3.csv(
+        "miami-dade-storm_data.csv",
+        (resData) => {
+          const dateParts = resData.BEGIN_DATE.split("/");
+          const month = parseInt(dateParts[0], 10);
+          const day = parseInt(dateParts[1], 10);
+          const yearShort = parseInt(dateParts[2], 10);
+
+          const fullYear = yearShort < 70 ? 2000 + yearShort : 1900 + yearShort;
+
+          const dateObject = new Date(fullYear, month - 1, day);
+          const monthName = dateObject.toLocaleString("en-US", {
+            month: "short",
+          });
+          const year = dateObject.getFullYear();
+
+          return {
+            Event_ID: +resData.EVENT_ID,
+            Begin_Date: resData.BEGIN_DATE,
+            month: monthName,
+            year: year,
+            date: dateObject,
+            Event_Type: resData.EVENT_TYPE,
+            Event_Narrative: resData.EVENT_NARRATIVE,
+            Episode_Narrative: resData.EPISODE_NARRATIVE,
+          };
+        },
+      );
 
       this.seaLevelData = seaLevelData;
       this.eventsData = eventsData;
@@ -88,6 +117,9 @@ class SeaLevelChart {
   drawChart() {
     document.getElementById("year-label").textContent = this.currentYear;
 
+    // Filter to current chart year
+    const data = this.seaLevelData.filter((d) => d.year === this.currentYear);
+
     const yMin = d3.min(this.seaLevelData, (d) =>
       Math.min(d.Monthly_MSL, d.Low_Conf),
     );
@@ -109,14 +141,19 @@ class SeaLevelChart {
       .append("g")
       .attr("transform", `translate(${this.margin.left},${this.margin.top})`);
 
-    const x = d3.scaleLinear().domain([1, 12]).range([0, this.width]);
+    const x = d3
+      .scaleTime()
+      .domain(d3.extent(data, (d) => d.date))
+      .range([0, this.width]);
     const y = this.yScale;
 
     // X Axis
     svg
       .append("g")
       .attr("transform", `translate(0,${this.height})`)
-      .call(d3.axisBottom(x).ticks(12).tickFormat(d3.format("d")));
+      .call(
+        d3.axisBottom(x).ticks(data.length).tickFormat(d3.timeFormat("%b %Y")),
+      );
 
     // Y Axis
     svg.append("g").call(d3.axisLeft(y));
@@ -139,24 +176,21 @@ class SeaLevelChart {
       .attr("text-anchor", "middle")
       .text("Month");
 
-    // Filter to current chart year
-    const data = this.seaLevelData.filter((d) => d.year === this.currentYear);
-
     const lineMonthly = d3
       .line()
-      .x((d) => x(d.month))
+      .x((d) => x(d.date))
       .y((d) => y(d.Monthly_MSL))
       .curve(d3.curveCatmullRom.alpha(0.5));
 
     const lineTrend = d3
       .line()
-      .x((d) => x(d.month))
+      .x((d) => x(d.date))
       .y((d) => y(d.Linear_Trend))
       .curve(d3.curveCatmullRom.alpha(0.5));
 
     const areaConfidence = d3
       .area()
-      .x((d) => x(d.month))
+      .x((d) => x(d.date))
       .y0((d) => y(d.Low_Conf))
       .y1((d) => y(d.High_Conf))
       .curve(d3.curveCatmullRom.alpha(0.5));
@@ -193,7 +227,7 @@ class SeaLevelChart {
       .data(data)
       .enter()
       .append("circle")
-      .attr("cx", (d) => x(d.month))
+      .attr("cx", (d) => x(d.date))
       .attr("cy", (d) => y(d.Monthly_MSL))
       .attr("r", 3)
       .attr("fill", this.colors.Monthly_MSL);
