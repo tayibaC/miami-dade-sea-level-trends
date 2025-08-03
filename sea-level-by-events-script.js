@@ -14,12 +14,13 @@ class SeaLevelChart {
     this.container = document.getElementById("header");
     this.margin = { top: 70, right: 30, bottom: 50, left: 80 };
     this.width = 800 - this.margin.left - this.margin.right;
-    this.height = 400 - this.margin.top - this.margin.bottom;
+    this.height = 500 - this.margin.top - this.margin.bottom;
     this.yScale = yScale;
     this.colors = {
       Monthly_MSL: "#0E87CC",
       Confidence_Band: "#FFE5B4",
       Linear_Trend: "#FA8128",
+      Event_Line: "#FF4040"
     };
   }
 
@@ -231,6 +232,47 @@ class SeaLevelChart {
       .attr("cy", (d) => y(d.Monthly_MSL))
       .attr("r", 3)
       .attr("fill", this.colors.Monthly_MSL);
+
+    // Group each event by month and year
+    const eventsByMonth = d3.groups(
+      this.eventsData.filter((e) => e.year === this.currentYear),
+      (d) => `${d.month} ${d.year}`,
+    );
+
+    const parseMonthYear = d3.timeParse("%b %Y");
+
+    eventsByMonth.forEach(([key, events]) => {
+      const groupDate = parseMonthYear(key);
+      const xCoord = x(groupDate);
+
+      // Draw vertical line for each event
+      svg
+        .append("line")
+        .attr("x1", xCoord)
+        .attr("x2", xCoord)
+        .attr("y1", 0)
+        .attr("y2", this.height)
+        .attr("stroke", this.colors.Event_Line)
+        .attr("stroke-dasharray", 7,7)
+        .attr("stroke-width", 1);
+
+      events.sort((a, b) => a.date - b.date);
+
+      const circleSpacing = 25;
+      events.forEach((event, i) => {
+        const yCoord = 20 + i * circleSpacing;
+
+        // Interactive points for each events
+        svg
+          .append("circle")
+          .attr("cx", xCoord)
+          .attr("cy", yCoord)
+          .attr("r", 4)
+          .attr("fill", "red")
+          .style("cursor", "pointer")
+          .on("click", () => {});
+      });
+    });
   }
 
   onPaginate(direction) {
