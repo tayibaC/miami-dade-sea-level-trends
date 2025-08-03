@@ -6,7 +6,10 @@ class SeaLevelChart {
   ) {
     this.seaLevelData = seaLevelData;
     this.currentYear = currentYear;
+    this.minYear = 1996;
+    this.maxYear = 2025;
 
+    this.container = document.getElementById("header");
     this.margin = { top: 70, right: 30, bottom: 50, left: 80 };
     this.width = 800 - this.margin.left - this.margin.right;
     this.height = 400 - this.margin.top - this.margin.bottom;
@@ -14,7 +17,7 @@ class SeaLevelChart {
     this.colors = {
       Monthly_MSL: "#0E87CC",
       Confidence_Band: "#FFE5B4",
-      Linear_Trend: "#FA8128"
+      Linear_Trend: "#FA8128",
     };
   }
 
@@ -36,12 +39,28 @@ class SeaLevelChart {
       this.currentYear = 1996;
 
       this.drawChart();
+      this.updateButtons();
+
+      document
+        .getElementById("next")
+        .addEventListener("click", () => this.onPaginate("next"));
+      document
+        .getElementById("prev")
+        .addEventListener("click", () => this.onPaginate("prev"));
+      document
+        .getElementById("first-page")
+        .addEventListener("click", () => this.onPaginate("first-page"));
+      document
+        .getElementById("last-page")
+        .addEventListener("click", () => this.onPaginate("last-page"));
     } catch (error) {
       console.log("Error fetching sea level data: ", error);
     }
   }
 
   drawChart() {
+    document.getElementById("year-label").textContent = this.currentYear;
+
     const yMin = d3.min(this.seaLevelData, (d) =>
       Math.min(d.Monthly_MSL, d.Low_Conf),
     );
@@ -151,6 +170,34 @@ class SeaLevelChart {
       .attr("cy", (d) => y(d.Monthly_MSL))
       .attr("r", 3)
       .attr("fill", this.colors.Monthly_MSL);
+  }
+
+  onPaginate(direction) {
+    if (direction === "next" && this.currentYear < this.maxYear) {
+      this.currentYear++;
+    } else if (direction === "prev" && this.currentYear > this.minYear) {
+      this.currentYear--;
+    } else if (direction === "first-page" && this.currentYear > this.minYear) {
+      this.currentYear = this.minYear;
+    } else if (direction === "last-page" && this.currentYear < this.maxYear) {
+      this.currentYear = this.maxYear;
+    }
+
+    // Clear previous chart
+    d3.select("#sea-level-chart").selectAll("*").remove();
+
+    // Draw new chart
+    this.drawChart();
+    this.updateButtons();
+  }
+
+  updateButtons() {
+    document.getElementById("prev").disabled = this.currentYear <= this.minYear;
+    document.getElementById("next").disabled = this.currentYear >= this.maxYear;
+    document.getElementById("first-page").disabled =
+      this.currentYear == this.minYear;
+    document.getElementById("last-page").disabled =
+      this.currentYear == this.maxYear;
   }
 }
 
