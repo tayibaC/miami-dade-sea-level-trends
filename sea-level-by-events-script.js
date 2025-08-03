@@ -20,7 +20,7 @@ class SeaLevelChart {
       Monthly_MSL: "#0E87CC",
       Confidence_Band: "#FFE5B4",
       Linear_Trend: "#FA8128",
-      Event_Line: "#FF4040"
+      Event_Line: "#FF4040",
     };
   }
 
@@ -240,6 +240,8 @@ class SeaLevelChart {
     );
 
     const parseMonthYear = d3.timeParse("%b %Y");
+    const annotationGroup = svg.append("g").attr("class", "annotations");
+    let activeEventId = null; // Tracks currently shown annotation's Event_ID
 
     eventsByMonth.forEach(([key, events]) => {
       const groupDate = parseMonthYear(key);
@@ -253,7 +255,7 @@ class SeaLevelChart {
         .attr("y1", 0)
         .attr("y2", this.height)
         .attr("stroke", this.colors.Event_Line)
-        .attr("stroke-dasharray", 7,7)
+        .attr("stroke-dasharray", 7, 7)
         .attr("stroke-width", 1);
 
       events.sort((a, b) => a.date - b.date);
@@ -270,9 +272,100 @@ class SeaLevelChart {
           .attr("r", 4)
           .attr("fill", "red")
           .style("cursor", "pointer")
-          .on("click", () => {});
+          .on("click", () => {
+            if (activeEventId === event.Event_ID) {
+              // Clicking the same circle again removes the annotation
+              annotationGroup.selectAll("*").remove();
+              activeEventId = null;
+            } else {
+              // Clicking a new circle removes old, render new
+              annotationGroup.selectAll("*").remove();
+              this.renderAnnotation(event, xCoord, yCoord, annotationGroup);
+              annotationGroup.raise();
+              activeEventId = event.Event_ID;
+            }
+          });
       });
     });
+  }
+
+  renderAnnotation(event, xPos, yPos, annotationGroup) {
+    const isBelowCenter = yPos > this.height / 2;
+    const isRightSide = xPos > this.width / 2;
+
+    const eventDate = event.Begin_Date;
+    const eventType = event.Event_Type;
+    const eventNarrative = event.Event_Narrative || "Not Available";
+    const episodeNarrative = event.Episode_Narrative || "Not Available";
+
+    const formattedLabel = `
+    <div class="label"; style="
+      font-size: 10px;
+      font-family: sans-serif;
+      max-width: 250px;
+      max-height: 200px;
+      overflow-y: scroll;
+      background-color: rgb(159, 224, 248);
+      padding: 6px;
+      padding-bottom: 16px;  /* Extra space for bottom text */
+      border-radius: 6px;
+      text-align: left;
+      scrollbar-width: thin;
+      scrollbar-color: #999 #e0e0e0;
+    ">
+      <div style="font-weight: bold; margin-bottom: 2px;">
+        ${eventType}
+      </div>
+      <div style="margin-bottom: 6px; font-size: 9px; color: #444;">
+        ${eventDate}
+      </div>
+      <div style="margin-bottom: 4px;">
+        <strong>Event Narrative:</strong><br/>
+        ${eventNarrative}
+      </div>
+      <div>
+        <strong>Episode Narrative:</strong><br/>
+        ${episodeNarrative}
+      </div>
+    </div>
+  `;
+
+    // Clear any previous annotations
+    annotationGroup.selectAll("*").remove();
+
+    // Direction of the annotation
+    const dx = isRightSide ? -60 : 60;
+
+    const annotation = d3
+      .annotation()
+      .type(d3.annotationCalloutElbow)
+      .annotations([
+        {
+          note: {
+            label: "",
+            wrap: 250,
+          },
+          x: xPos,
+          y: yPos,
+          dx: dx,
+          dy: isBelowCenter ? -80 : 80,
+          subject: { radius: 6 },
+        },
+      ]);
+
+    annotationGroup.call(annotation);
+
+    const eventAnnotation = annotationGroup
+      .append("foreignObject")
+      .attr("x", isRightSide ? xPos - 325 : xPos + 65)
+      .attr("y", isBelowCenter ? yPos - 225 : yPos + 10)
+      .attr("width", 260)
+      .attr("height", 100)
+      .html(formattedLabel);
+
+    const innerDiv = eventAnnotation.select("div.label").node();
+    const contentHeight = innerDiv.getBoundingClientRect().height + 16;
+    eventAnnotation.attr("height", Math.min(contentHeight, 250));
   }
 
   onPaginate(direction) {
