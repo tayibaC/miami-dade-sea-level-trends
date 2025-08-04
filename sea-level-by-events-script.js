@@ -293,47 +293,9 @@ class SeaLevelChart {
     const isBelowCenter = yPos > this.height / 2;
     const isRightSide = xPos > this.width / 2;
 
-    const eventDate = event.Begin_Date;
-    const eventType = event.Event_Type;
-    const eventNarrative = event.Event_Narrative || "Not Available";
-    const episodeNarrative = event.Episode_Narrative || "Not Available";
-
-    const formattedLabel = `
-    <div class="label"; style="
-      font-size: 10px;
-      font-family: sans-serif;
-      max-width: 250px;
-      max-height: 200px;
-      overflow-y: scroll;
-      background-color: rgb(159, 224, 248);
-      padding: 6px;
-      padding-bottom: 16px;  /* Extra space for bottom text */
-      border-radius: 6px;
-      text-align: left;
-      scrollbar-width: thin;
-      scrollbar-color: #999 #e0e0e0;
-    ">
-      <div style="font-weight: bold; margin-bottom: 2px;">
-        ${eventType}
-      </div>
-      <div style="margin-bottom: 6px; font-size: 9px; color: #444;">
-        ${eventDate}
-      </div>
-      <div style="margin-bottom: 4px;">
-        <strong>Event Narrative:</strong><br/>
-        ${eventNarrative}
-      </div>
-      <div>
-        <strong>Episode Narrative:</strong><br/>
-        ${episodeNarrative}
-      </div>
-    </div>
-  `;
-
     // Clear any previous annotations
     annotationGroup.selectAll("*").remove();
 
-    // Direction of the annotation
     const dx = isRightSide ? -60 : 60;
 
     const annotation = d3
@@ -341,10 +303,7 @@ class SeaLevelChart {
       .type(d3.annotationCalloutElbow)
       .annotations([
         {
-          note: {
-            label: "",
-            wrap: 250,
-          },
+          note: { label: "", wrap: 250 },
           x: xPos,
           y: yPos,
           dx: dx,
@@ -355,17 +314,32 @@ class SeaLevelChart {
 
     annotationGroup.call(annotation);
 
-    const eventAnnotation = annotationGroup
+    // Clone HTML template
+    const template = document.getElementById("annotation-template");
+    const cloned = template.content.cloneNode(true);
+
+    cloned.querySelector(".annotation-type").textContent = event.Event_Type;
+    cloned.querySelector(".annotation-date").textContent = event.Begin_Date;
+    cloned.querySelector(".event-narrative").textContent =
+      event.Event_Narrative || "Not Available";
+    cloned.querySelector(".episode-narrative").textContent =
+      event.Episode_Narrative || "Not Available";
+
+    // Append as foreignObject
+    const annotationBox = annotationGroup
       .append("foreignObject")
       .attr("x", isRightSide ? xPos - 325 : xPos + 65)
       .attr("y", isBelowCenter ? yPos - 225 : yPos + 10)
       .attr("width", 260)
       .attr("height", 100)
-      .html(formattedLabel);
+      .attr("class", "annotation-container");
 
-    const innerDiv = eventAnnotation.select("div.label").node();
-    const contentHeight = innerDiv.getBoundingClientRect().height + 16;
-    eventAnnotation.attr("height", Math.min(contentHeight, 250));
+    annotationBox.node().appendChild(cloned);
+
+    // Resize based on content height
+    const content = annotationBox.select(".annotation-label").node();
+    const contentHeight = content.getBoundingClientRect().height + 16;
+    annotationBox.attr("height", Math.min(contentHeight, 250));
   }
 
   onPaginate(direction) {
@@ -397,5 +371,7 @@ class SeaLevelChart {
   }
 }
 
-const chart = new SeaLevelChart();
-chart.getData();
+document.addEventListener("DOMContentLoaded", () => {
+  const chart = new SeaLevelChart();
+  chart.getData();
+});

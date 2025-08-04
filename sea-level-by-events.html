@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Miami-Dade County - Sea Level</title>
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div id="header">
@@ -15,10 +16,24 @@
         <button id="next">&gt;</button>
         <button id="last-page">&raquo;</button>
       </div>
-      <div id="sea-level-chart"></div>
-      <script src="https://d3js.org/d3.v7.min.js"></script>
-      <script src="https://unpkg.com/d3-svg-annotation@2.5.1/d3-annotation.min.js"></script>
-      <script src="sea-level-by-events-script.js"></script>
     </div>
+    <div id="sea-level-chart"></div>
+    <template id="annotation-template">
+      <div class="annotation-label">
+        <div class="annotation-type"></div>
+        <div class="annotation-date"></div>
+        <div class="annotation-event">
+          <strong>Event Narrative:</strong><br />
+          <span class="event-narrative"></span>
+        </div>
+        <div class="annotation-episode">
+          <strong>Episode Narrative:</strong><br />
+          <span class="episode-narrative"></span>
+        </div>
+      </div>
+    </template>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/d3-svg-annotation@2.5.1/d3-annotation.min.js"></script>
+    <script src="sea-level-by-events-script.js"></script>
   </body>
 </html>

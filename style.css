@@ -1,0 +1,30 @@
+.annotation-label {
+  font-size: 10px;
+  font-family: sans-serif;
+  max-width: 250px;
+  max-height: 200px;
+  overflow-y: scroll;
+  background-color: rgb(159, 224, 248);
+  padding: 6px;
+  padding-bottom: 16px;
+  border-radius: 6px;
+  text-align: left;
+  scrollbar-width: thin;
+  scrollbar-color: #999 #e0e0e0;
+}
+
+.annotation-type {
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.annotation-date {
+  margin-bottom: 6px;
+  font-size: 9px;
+  color: #444;
+}
+
+.annotation-event,
+.annotation-episode {
+  margin-bottom: 4px;
+}
