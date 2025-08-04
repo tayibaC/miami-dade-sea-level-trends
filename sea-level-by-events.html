@@ -3,12 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Miami-Dade County - Sea Level</title>
+    <title>Sea Level Trends and Storm Events</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div id="header">
-      <h1>Miami-Dade County - Sea Level Trends & Storm Data</h1>
+      <h1>Sea Level Trends and Storm Events</h1>
+      <h2 class="subtitle">Miami-Dade, Florida</h2>
       <div class="pagination">
         <button id="first-page" disabled="true">&laquo;</button>
         <button id="prev" disabled="true">&lt;</button>
@@ -18,7 +19,14 @@
       </div>
     </div>
     <div class="flex-container">
-      <div id="sea-level-chart"></div>
+      <div class="chart-container">
+        <div id="sea-level-chart"></div>
+        <div class="footnote">
+          <p>Events include: Coastal Flood, Flash Flood, Flood, Hurricane (Typhoon), Storm Surge/Tide, Tsunami</p>
+          <p>Storm Data: NOAA NCDC</p>
+          <p>Sea Level Trends Data: NOAA Tides & Currents</p>
+        </div>
+      </div>
       <div id="chart-legend"></div>
     </div>
     <template id="annotation-template">
