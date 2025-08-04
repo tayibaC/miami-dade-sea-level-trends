@@ -1,3 +1,9 @@
+.flex-container {
+  display: flex; /* Enables Flexbox for the container */
+  justify-content: space-around; /* Distributes space between items */
+  /* Other properties like align-items, gap, etc., can be added for further control */
+}
+
 .annotation-label {
   font-size: 10px;
   font-family: sans-serif;

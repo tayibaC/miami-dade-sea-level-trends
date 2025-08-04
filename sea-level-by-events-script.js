@@ -17,10 +17,10 @@ class SeaLevelChart {
     this.height = 500 - this.margin.top - this.margin.bottom;
     this.yScale = yScale;
     this.colors = {
-      Monthly_MSL: "#0E87CC",
-      Confidence_Band: "#FFE5B4",
-      Linear_Trend: "#FA8128",
-      Event_Line: "#FF4040",
+      Monthly_MSL: "#0E87CC", // Orange Line
+      Confidence_Band: "#FFE5B4", // Light Orange Fill
+      Linear_Trend: "#FA8128", // Blue Line
+      Event_Line: "#FF4040", // Red vertical dashes with cirlce
     };
   }
 
@@ -94,10 +94,11 @@ class SeaLevelChart {
       this.seaLevelData = seaLevelData;
       this.eventsData = eventsData;
       this.currentYear = 1996;
-      this.minYear = d3.min(seaLevelData, d => d.year);
-      this.maxYear = d3.max(seaLevelData, d => d.year);
+      this.minYear = d3.min(seaLevelData, (d) => d.year);
+      this.maxYear = d3.max(seaLevelData, (d) => d.year);
 
       this.drawChart();
+      this.renderLegend();
       this.updateButtons();
 
       document
@@ -310,7 +311,6 @@ class SeaLevelChart {
     const avgCurrent = d3.mean(currentData, (d) => d.Linear_Trend);
     const avgPrev = d3.mean(prevData, (d) => d.Linear_Trend);
 
-
     const diff = avgCurrent - avgPrev;
     const formattedDiff = `${diff >= 0 ? "+" : "-"}${(diff * 1000).toFixed(1)} mm`;
 
@@ -345,13 +345,100 @@ class SeaLevelChart {
           subject: { radius: 4 },
           connector: {
             end: "arrow",
-          }
+          },
         },
       ]);
 
     // Clear previous and add new annotation group
     svg.selectAll(".trend-change-annotation").remove();
     svg.append("g").attr("class", "trend-change-annotation").call(annotation);
+  }
+
+  renderLegend() {
+    const legendWidth = 200;
+    const legendHeight = 110;
+    const lineHeight = 24;
+    const padding = 10;
+
+    const labels = {
+      Monthly_MSL: "Monthly Median Sea Level",
+      Confidence_Band: "Confidence Band",
+      Linear_Trend: "Linear Trend",
+      Event_Line: "Event Marker",
+    };
+
+    const svg = d3
+      .select("#chart-legend")
+      .append("svg")
+      .attr("width", legendWidth)
+      .attr("height", legendHeight);
+
+    // Legend background
+    svg
+      .append("rect")
+      .attr("width", legendWidth)
+      .attr("height", legendHeight)
+      .attr("fill", "#f5f5f5")
+      .attr("stroke", "#ccc")
+      .attr("rx", 8)
+      .attr("ry", 8);
+
+    // Draw legend items
+    let index = 0;
+    for (const key in this.colors) {
+      const y = padding + index * lineHeight;
+
+      if (key === "Confidence_Band") {
+        // Filled rectangle
+        svg
+          .append("rect")
+          .attr("x", 15)
+          .attr("y", y)
+          .attr("width", 25)
+          .attr("height", 10)
+          .attr("fill", this.colors[key])
+          .attr("stroke", "#999");
+      } else if (key === "Event_Line") {
+        // Dashed red line + circle
+        svg
+          .append("line")
+          .attr("x1", 15)
+          .attr("x2", 40)
+          .attr("y1", y + 6)
+          .attr("y2", y + 6)
+          .attr("stroke", this.colors[key])
+          .attr("stroke-dasharray", "4,2")
+          .attr("stroke-width", 2);
+
+        svg
+          .append("circle")
+          .attr("cx", 27.5)
+          .attr("cy", y + 6)
+          .attr("r", 3)
+          .attr("fill", this.colors[key]);
+      } else {
+        // Solid line for MSL and Trend
+        svg
+          .append("line")
+          .attr("x1", 15)
+          .attr("x2", 40)
+          .attr("y1", y + 6)
+          .attr("y2", y + 6)
+          .attr("stroke", this.colors[key])
+          .attr("stroke-width", 3);
+      }
+
+      // Add label text
+      svg
+        .append("text")
+        .attr("x", 50)
+        .attr("y", y + 10)
+        .text(labels[key])
+        .attr("font-size", "13px")
+        .attr("fill", "#333");
+
+      index++;
+    }
   }
 
   renderEventAnnotation(event, xPos, yPos, annotationGroup) {
