@@ -28,3 +28,13 @@
 .annotation-episode {
   margin-bottom: 4px;
 }
+
+.annotation-note-title {
+  font-size: small;
+  fill: rgb(0, 15, 0);
+}
+
+.annotation-note-label {
+  font-size: small;
+  fill: green;
+}

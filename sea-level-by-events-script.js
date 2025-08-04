@@ -8,8 +8,8 @@ class SeaLevelChart {
     this.seaLevelData = seaLevelData;
     this.eventsData = eventsData;
     this.currentYear = currentYear;
-    this.minYear = 1996;
-    this.maxYear = 2025;
+    this.minYear = 0;
+    this.maxYear = 0;
 
     this.container = document.getElementById("header");
     this.margin = { top: 70, right: 30, bottom: 50, left: 80 };
@@ -94,6 +94,8 @@ class SeaLevelChart {
       this.seaLevelData = seaLevelData;
       this.eventsData = eventsData;
       this.currentYear = 1996;
+      this.minYear = d3.min(seaLevelData, d => d.year);
+      this.maxYear = d3.max(seaLevelData, d => d.year);
 
       this.drawChart();
       this.updateButtons();
@@ -233,6 +235,8 @@ class SeaLevelChart {
       .attr("r", 3)
       .attr("fill", this.colors.Monthly_MSL);
 
+    this.renderTrendChangeAnnotation(svg);
+
     // Group each event by month and year
     const eventsByMonth = d3.groups(
       this.eventsData.filter((e) => e.year === this.currentYear),
@@ -280,7 +284,12 @@ class SeaLevelChart {
             } else {
               // Clicking a new circle removes old, render new
               annotationGroup.selectAll("*").remove();
-              this.renderAnnotation(event, xCoord, yCoord, annotationGroup);
+              this.renderEventAnnotation(
+                event,
+                xCoord,
+                yCoord,
+                annotationGroup,
+              );
               annotationGroup.raise();
               activeEventId = event.Event_ID;
             }
@@ -289,7 +298,63 @@ class SeaLevelChart {
     });
   }
 
-  renderAnnotation(event, xPos, yPos, annotationGroup) {
+  renderTrendChangeAnnotation(svg) {
+    // Compare current year to previous year's linear trend
+    const currentData = this.seaLevelData.filter(
+      (d) => d.year === this.currentYear,
+    );
+    const prevData = this.seaLevelData.filter(
+      (d) => d.year === this.currentYear - 1,
+    );
+
+    const avgCurrent = d3.mean(currentData, (d) => d.Linear_Trend);
+    const avgPrev = d3.mean(prevData, (d) => d.Linear_Trend);
+
+
+    const diff = avgCurrent - avgPrev;
+    const formattedDiff = `${diff >= 0 ? "+" : "-"}${(diff * 1000).toFixed(1)} mm`;
+
+    // Positioning annotation at the end of the year
+    const decData =
+      currentData.find((d) => d.month === 12) ||
+      currentData[currentData.length - 1];
+    const y = this.yScale;
+    const yPos = y(decData.Linear_Trend);
+
+    const formattedLabel =
+      this.currentYear === this.minYear
+        ? "No previous year data"
+        : `${formattedDiff} vs last year`;
+    const labelColor = diff >= 0 ? "green" : "red";
+
+    const annotation = d3
+      .annotation()
+      .type(d3.annotationLabel)
+      .annotations([
+        {
+          note: {
+            title: "Average Trend Change",
+            label: formattedLabel,
+            wrap: 200,
+            style: { fill: labelColor },
+          },
+          x: this.width,
+          y: yPos,
+          dx: -40,
+          dy: 30,
+          subject: { radius: 4 },
+          connector: {
+            end: "arrow",
+          }
+        },
+      ]);
+
+    // Clear previous and add new annotation group
+    svg.selectAll(".trend-change-annotation").remove();
+    svg.append("g").attr("class", "trend-change-annotation").call(annotation);
+  }
+
+  renderEventAnnotation(event, xPos, yPos, annotationGroup) {
     const isBelowCenter = yPos > this.height / 2;
     const isRightSide = xPos > this.width / 2;
 
