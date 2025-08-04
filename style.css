@@ -4,6 +4,22 @@
   /* Other properties like align-items, gap, etc., can be added for further control */
 }
 
+.event-circle {
+  fill: red;
+  cursor: pointer;
+  transition: fill 0.2s ease;
+}
+
+.event-circle:hover {
+  fill: #ff8080;
+}
+
+.event-circle.active {
+  fill: #b30000;
+  stroke: black;
+  stroke-width: 1.5px;
+}
+
 .annotation-label {
   font-size: 10px;
   font-family: sans-serif;

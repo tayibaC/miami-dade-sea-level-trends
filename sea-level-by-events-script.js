@@ -16,6 +16,9 @@ class SeaLevelChart {
     this.width = 800 - this.margin.left - this.margin.right;
     this.height = 500 - this.margin.top - this.margin.bottom;
     this.yScale = yScale;
+    this.activeEventId = null;
+    this.annotationGroup;
+
     this.colors = {
       Monthly_MSL: "#0E87CC", // Orange Line
       Confidence_Band: "#FFE5B4", // Light Orange Fill
@@ -245,8 +248,7 @@ class SeaLevelChart {
     );
 
     const parseMonthYear = d3.timeParse("%b %Y");
-    const annotationGroup = svg.append("g").attr("class", "annotations");
-    let activeEventId = null; // Tracks currently shown annotation's Event_ID
+    this.annotationGroup = svg.append("g").attr("class", "annotations");
 
     eventsByMonth.forEach(([key, events]) => {
       const groupDate = parseMonthYear(key);
@@ -274,25 +276,30 @@ class SeaLevelChart {
           .append("circle")
           .attr("cx", xCoord)
           .attr("cy", yCoord)
-          .attr("r", 4)
+          .attr("r", 5)
+          .attr("class", "event-circle")
           .attr("fill", "red")
           .style("cursor", "pointer")
-          .on("click", () => {
-            if (activeEventId === event.Event_ID) {
-              // Clicking the same circle again removes the annotation
-              annotationGroup.selectAll("*").remove();
-              activeEventId = null;
+          .on("click", (e) => {
+            e.stopPropagation();
+
+            // Clicking the same circle again removes the annotation
+            d3.selectAll(".event-circle").classed("active", false);
+            this.annotationGroup.selectAll("*").remove();
+
+            if (this.activeEventId === event.Event_ID) {
+              this.activeEventId = null;
             } else {
               // Clicking a new circle removes old, render new
-              annotationGroup.selectAll("*").remove();
+              d3.select(e.currentTarget).classed("active", true);
               this.renderEventAnnotation(
                 event,
                 xCoord,
                 yCoord,
-                annotationGroup,
+                this.annotationGroup,
               );
-              annotationGroup.raise();
-              activeEventId = event.Event_ID;
+              this.annotationGroup.raise();
+              this.activeEventId = event.Event_ID;
             }
           });
       });
@@ -441,12 +448,12 @@ class SeaLevelChart {
     }
   }
 
-  renderEventAnnotation(event, xPos, yPos, annotationGroup) {
+  renderEventAnnotation(event, xPos, yPos) {
     const isBelowCenter = yPos > this.height / 2;
     const isRightSide = xPos > this.width / 2;
 
     // Clear any previous annotations
-    annotationGroup.selectAll("*").remove();
+    this.annotationGroup.selectAll("*").remove();
 
     const dx = isRightSide ? -60 : 60;
 
@@ -464,7 +471,7 @@ class SeaLevelChart {
         },
       ]);
 
-    annotationGroup.call(annotation);
+    this.annotationGroup.call(annotation);
 
     // Clone HTML template
     const template = document.getElementById("annotation-template");
@@ -478,7 +485,7 @@ class SeaLevelChart {
       event.Episode_Narrative || "Not Available";
 
     // Append as foreignObject
-    const annotationBox = annotationGroup
+    const annotationBox = this.annotationGroup
       .append("foreignObject")
       .attr("x", isRightSide ? xPos - 325 : xPos + 65)
       .attr("y", isBelowCenter ? yPos - 225 : yPos + 10)
@@ -521,9 +528,24 @@ class SeaLevelChart {
     document.getElementById("last-page").disabled =
       this.currentYear == this.maxYear;
   }
+
+  clickOutsideListener() {
+    document.addEventListener("click", (e) => {
+      if (
+        !e.target.closest(".event-circle") &&
+        !e.target.closest(".annotation-container")
+      ) {
+        this.annotationGroup.selectAll("*").remove();
+
+        d3.selectAll(".event-circle").classed("active", false);
+        this.activeEventId = null;
+      }
+    });
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   const chart = new SeaLevelChart();
   chart.getData();
+  chart.clickOutsideListener();
 });
